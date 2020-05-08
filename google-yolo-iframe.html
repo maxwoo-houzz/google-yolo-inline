@@ -32,10 +32,14 @@
 					clientId: PUBLIC_CLIENT_ID
 				}]
 			};
+			let attributeObserver;
 
 			function handleCredentialResponse({ clientId, credential, select_by }) {
 				if (credential) {
 					messageParent({ type: 'credential', credential });
+					if (attributeObserver) {
+						attributeObserver.disconnect();
+					}
 				} else {
 					// TODO: how to handle errors? Could not find relevant Google documentation.
 				}
@@ -47,14 +51,14 @@
 					callback: handleCredentialResponse
 				});
 
-				google.accounts.id.prompt(onPrompt);
+				google.accounts.id.prompt(handlePrompt);
 			}
 
 			const messageParent = data => {
 				window.parent.postMessage(data, '*' /* REPLACE BY TOP LEVEL DOMAIN! */);
 			};
 
-			function onPrompt(notification) {
+			function handlePrompt(notification) {
 				if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
 						console.log('try next provider if OneTap is not displayed or skipped');
 				}
@@ -76,26 +80,28 @@
 
 				// openyolo.setRenderMode('navPopout');
 
-	            // successfully initialized
-	            const iframe = document.querySelector('iframe[src^="https://accounts.google.com/gsi/iframe/"]');
+				// successfully initialized
+				const iframe = document.querySelector('iframe[src^="https://accounts.google.com/gsi/iframe/"]');
 
-	            if (!iframe) {
-	                return;
-	            }
+				if (!iframe) {
+					return;
+				}
 
-				// We to watch the <iframe> that Google Yolo
-				// inserted. Its style attribute will be updated with a height that
-				// needs to be passed back up to the parent iframe, to avoid any
-				// clipping. The height can change if the user is signed in with
-				// many Google accounts, and clicks the 'X more accounts' button.
-				iframe.classList.add('google-inserted-frame');
+				if (!attributeObserver) {
+					// We to watch the <iframe> that Google Yolo
+					// inserted. Its style attribute will be updated with a height that
+					// needs to be passed back up to the parent iframe, to avoid any
+					// clipping. The height can change if the user is signed in with
+					// many Google accounts, and clicks the 'X more accounts' button.
+					iframe.classList.add('google-inserted-frame');
 
-				const attributeObserver = new MutationObserver(iframeMutationsList => {
-					let height = parseInt(iframeMutationsList[0].target.style.height);
-					messageParent({type: 'height', height});
-				});
+					const attributeObserver = new MutationObserver(iframeMutationsList => {
+						let height = parseInt(iframeMutationsList[0].target.style.height);
+						messageParent({type: 'height', height});
+					});
 
-				attributeObserver.observe(iframe, { attributes: true });
+					attributeObserver.observe(iframe, { attributes: true });
+				}
 			};
 		</script>
 	</head>
