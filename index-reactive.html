@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+	<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+	<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type='text/babel'>
+
+const PUBLIC_CLIENT_ID =
+		'412842310182-nnsbnt2ropvf4ujenj9ueib2vupdd5sj.apps.googleusercontent.com';
+const CONFIG = {
+	supportedAuthMethods: [
+		'https://accounts.google.com'
+	],
+	supportedIdTokenProviders: [{
+		uri: 'https://accounts.google.com',
+		clientId: PUBLIC_CLIENT_ID
+	}]
+};
+
+class MainFrame extends React.Component {
+	constructor(props) {
+		super(props);
+		this.handleCredentialResponse = this.handleCredentialResponse.bind(this);
+		this.handlePrompt = this.handlePrompt.bind(this);
+		this.onIFrameMounted = this.onIFrameMounted.bind(this);
+		this.onHeightChanged = this.onHeightChanged.bind(this);
+
+		this.setContentRef = node => {
+			this.iFrameEl = node;
+			this.iFrame = node && node.contentWindow;
+		}
+	}
+
+	onIFrameMounted() {
+		if (!this.iFrame) {
+			console.error('iframe onLoad() called but ref not set?');
+		}
+        const yolo = this.iFrame.document.createElement('script');
+        yolo.type = 'text/javascript';
+        yolo.async = true;
+        yolo.onerror = (e) => {
+            console.log(e);
+        };
+        yolo.onload = () => {
+			this.iFrame.google.accounts.id.initialize({
+				client_id: PUBLIC_CLIENT_ID,
+				callback: this.handleCredentialResponse
+			});
+
+			this.iFrame.google.accounts.id.prompt(this.handlePrompt);
+        };
+        yolo.src = 'https://accounts.google.com/gsi/client';
+        this.iFrame.document.body.appendChild(yolo);
+	}
+
+	handleCredentialResponse({ clientId, credential, select_by }) {
+		console.log(`got credential ${credential}`);
+	}
+
+	handlePrompt(notification) {
+		// the frame injected by the google yolo script
+		const yoloFrame = this.iFrame.document.querySelector('iframe[src^="https://accounts.google.com/gsi/iframe/"]');
+
+		if (yoloFrame && !this.attributeObserver) {
+			console.log('adding attribute observer');
+			yoloFrame.classList.add('google-inserted-frame');
+
+			this.attributeObserver = new MutationObserver(iframeMutationsList => {
+				let height = parseInt(iframeMutationsList[0].target.style.height);
+				this.onHeightChanged(height);
+			});
+
+			this.attributeObserver.observe(yoloFrame, { attributes: true });
+		}
+
+		if (this.props.handlePrompt) {
+			this.props.handlePrompt(notification);
+		}
+	}
+
+	onHeightChanged(height) {
+		this.iFrameEl.style.height = height + 'px';
+	}
+
+	render() {
+		return (
+			<iframe src='bare-iframe.html' ref={this.setContentRef} onLoad={this.onIFrameMounted}/>
+		)
+	}
+}
+
+ReactDOM.render(
+	<MainFrame />,
+	document.querySelector('#root'),
+)
+</script>
+</body>
+</html>
