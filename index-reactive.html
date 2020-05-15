@@ -29,13 +29,13 @@ class GoogleOneTapIFrame extends React.Component {
 		if (!this.iFrame) {
 			console.error('iframe onLoad() called but ref not set?');
 		}
-			const yolo = this.iFrame.document.createElement('script');
-			yolo.type = 'text/javascript';
-			yolo.async = true;
-			yolo.onerror = (e) => {
-				console.log(e);
-			};
-			yolo.onload = () => {
+		const yolo = this.iFrame.document.createElement('script');
+		yolo.type = 'text/javascript';
+		yolo.async = true;
+		yolo.onerror = (e) => {
+			console.log(e);
+		};
+		yolo.onload = () => {
 			this.iFrame.google.accounts.id.initialize({
 				client_id: this.props.PUBLIC_CLIENT_ID,
 				callback: this.handleCredentialResponse
