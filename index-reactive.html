@@ -22,12 +22,24 @@ class GoogleOneTapIFrame extends React.Component {
 		this.setContentRef = node => {
 			this.iFrameEl = node;
 			this.iFrame = node && node.contentWindow;
+
+			if (this.iFrame && this.iFrame.document && this.iFrame.document.readyState == 'complete') {
+				// for some reason if the iframe is already at readyState complete (maybe cached?),
+				// the onLoad event won't get fired, so we need to manually call onIFrameMounted().
+				// see https://github.com/reactjs/react-rails/issues/440 for more details.
+				this.onIFrameMounted();
+			}
 		}
 	}
 
 	onIFrameMounted() {
 		if (!this.iFrame) {
 			console.error('iframe onLoad() called but ref not set?');
+			return;
+		}
+		if (!this.iFrame.iFrameLoaded) {
+			console.error('Failed to load iframe src');
+			return;
 		}
 		const yolo = this.iFrame.document.createElement('script');
 		yolo.type = 'text/javascript';
