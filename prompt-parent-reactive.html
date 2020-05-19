@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+	<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+	<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="root"></div>
+<script type='text/babel'>
+
+class GoogleOneTapIFrame extends React.Component {
+	constructor(props) {
+		super(props);
+		this.handleCredentialResponse = this.handleCredentialResponse.bind(this);
+		this.handlePrompt = this.handlePrompt.bind(this);
+	}
+
+	componentDidMount() {
+		const yolo = document.createElement('script');
+		yolo.type = 'text/javascript';
+		yolo.async = true;
+		yolo.onerror = (e) => {
+			console.log(e);
+		};
+		yolo.onload = () => {
+			window.google.accounts.id.initialize({
+				client_id: this.props.PUBLIC_CLIENT_ID,
+				callback: this.handleCredentialResponse,
+				prompt_parent_id: "one-tap-container",
+			});
+
+			window.google.accounts.id.prompt(this.handlePrompt);
+		};
+		yolo.src = 'https://accounts.google.com/gsi/client';
+
+		document.body.appendChild(yolo);
+	}
+
+	handleCredentialResponse(response) {
+		if (this.props.handleCredentialResponse) {
+			this.props.handleCredentialResponse(response);
+		}
+	}
+
+	handlePrompt(notification) {
+		console.log(notification);
+		// the frame injected by the google yolo script
+
+		if (this.props.handlePrompt) {
+			this.props.handlePrompt(notification);
+		}
+	}
+
+	render() {
+		return <div id="one-tap-container"></div>;
+	}
+}
+
+class Page extends React.Component {
+	handleCredentialResponse({ clientId, credential, select_by }) {
+		console.log(`got credential ${credential}`);
+	}
+
+	handlePrompt(notification) {
+		console.log(notification);
+	}
+
+	render() {
+		const PUBLIC_CLIENT_ID = '412842310182-nnsbnt2ropvf4ujenj9ueib2vupdd5sj.apps.googleusercontent.com';
+
+		return <div className="sign-up">
+			<h1 className="sign-up__title">Sign Up for Localhost</h1>
+			<GoogleOneTapIFrame
+				PUBLIC_CLIENT_ID={PUBLIC_CLIENT_ID}
+				handlePrompt={this.handlePrompt.bind(this)}
+				handleCredentialResponse={this.handleCredentialResponse.bind(this)}
+				className={'sign-up__google'}/>
+			<p className="sign-up__divider">or</p>
+			<div className="sign-up__field">Email</div>
+			<div className="sign-up__field">Password</div>
+			<div className="sign-up__button"></div>
+		</div>;
+	}
+}
+
+ReactDOM.render(
+	<Page />,
+	document.querySelector('#root'),
+)
+</script>
+</body>
+</html>
